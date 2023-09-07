@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -35,8 +38,15 @@ func postReceipt(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
 }
 
+type PointGetter func(receipt) int
+
 func getPointsFromReceipt(c *gin.Context) {
-	points := 32
+
+	id := c.Param("id")
+	receipt := receipts[id]
+
+	points := getTotalPoints(receipt)
+
 	c.IndentedJSON(http.StatusOK, gin.H{"points": points})
 }
 
@@ -91,4 +101,80 @@ func validateReceipt(rec receipt) string {
 	}
 
 	return builder.String()
+}
+
+var functionsForPoints = []PointGetter{getPointsFromRetailerName, getPointsFromTotal, getPointsFromItems, getPointsFromDateTime}
+
+func getTotalPoints(rec receipt) int {
+	points := 0
+	for _, fn := range functionsForPoints {
+		points += getPointsFromFunc(fn, rec)
+	}
+	return points
+}
+
+func getPointsFromFunc(fn PointGetter, rec receipt) int {
+	return fn(rec)
+}
+
+func getPointsFromRetailerName(rec receipt) int {
+	points := 0
+	for _, char := range rec.Retailer {
+		if unicode.IsLetter(char) || unicode.IsDigit(char) {
+			points++
+		}
+	}
+	return points
+}
+
+func getPointsFromTotal(rec receipt) int {
+	points := 0
+	switch cents := rec.Total[len(rec.Total)-2 : len(rec.Total)]; cents {
+	case "00":
+		points = 75
+	case "25":
+		points = 25
+	case "50":
+		points = 25
+	case "75":
+		points = 25
+	default:
+		points = 0
+	}
+	return points
+}
+func getPointsFromItems(rec receipt) int {
+	points := 0
+	items := rec.Items
+	points += (len(items) / 2) * 5
+	for _, item := range items {
+		trimmedLength := len(strings.Trim(item.ShortDescription, " \t\r\n"))
+		if trimmedLength%3 == 0 {
+			points += int(math.Round(float64(trimmedLength) * 0.2))
+		}
+	}
+	return points
+}
+
+func getPointsFromDateTime(rec receipt) int {
+	points := 0
+	date, dateErr := time.Parse("2006-01-02", rec.PurchaseDate)
+	if dateErr == nil {
+		day := date.Day()
+		if day%2 == 1 {
+			points += 6
+		}
+	}
+	time, timeErr := time.Parse("15:04", rec.PurchaseTime)
+	if timeErr == nil {
+		hour := time.Hour()
+		minute := time.Minute()
+		timeAfter2pm := hour == 14 && minute > 0 || hour > 14
+		timeBefore4pm := hour < 16
+		if timeAfter2pm && timeBefore4pm {
+			points += 10
+		}
+	}
+
+	return points
 }
