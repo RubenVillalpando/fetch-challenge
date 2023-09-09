@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -16,10 +17,10 @@ import (
 
 var receipts = make(map[string]receipt)
 var validate *validator.Validate
-var retailerRegex = regexp.MustCompile("^\\S+$")
-var totalRegex = regexp.MustCompile("^\\d+\\.\\d{2}$")
-var shortDescRegex = regexp.MustCompile("^[\\w\\s\\-]+$")
-var priceRegex = regexp.MustCompile("^\\d+\\.\\d{2}$")
+var retailerRegex = regexp.MustCompile(`^\S+$`)
+var totalRegex = regexp.MustCompile(`^\d+\.\d{2}$`)
+var shortDescRegex = regexp.MustCompile(`^[\w\s\-]+$`)
+var priceRegex = regexp.MustCompile(`^\d+\.\d{2}$`)
 
 func postReceipt(c *gin.Context) {
 	var newReceipt receipt
@@ -103,7 +104,14 @@ func validateReceipt(rec receipt) string {
 	return builder.String()
 }
 
-var functionsForPoints = []PointGetter{getPointsFromRetailerName, getPointsFromTotal, getPointsFromItems, getPointsFromDateTime}
+var functionsForPoints = []PointGetter{
+	getPointsFromRetailerName,
+	getPointsFromTotal,
+	getPointsFromItemQtty,
+	getPointsFromItemShortDesc,
+	getPointsFromDate,
+	getPointsFromTime,
+}
 
 func getTotalPoints(rec receipt) int {
 	points := 0
@@ -143,20 +151,26 @@ func getPointsFromTotal(rec receipt) int {
 	}
 	return points
 }
-func getPointsFromItems(rec receipt) int {
+
+func getPointsFromItemQtty(rec receipt) int {
+	return (len(rec.Items) / 2) * 5
+}
+
+func getPointsFromItemShortDesc(rec receipt) int {
 	points := 0
-	items := rec.Items
-	points += (len(items) / 2) * 5
-	for _, item := range items {
+	for _, item := range rec.Items {
 		trimmedLength := len(strings.Trim(item.ShortDescription, " \t\r\n"))
-		if trimmedLength%3 == 0 {
-			points += int(math.Round(float64(trimmedLength) * 0.2))
+		if trimmedLength%3 == 0 && trimmedLength != 0 {
+			if price, err := strconv.ParseFloat(item.Price, 32); err == nil {
+				points += int(math.Ceil(price * 0.2))
+
+			}
 		}
 	}
 	return points
 }
 
-func getPointsFromDateTime(rec receipt) int {
+func getPointsFromDate(rec receipt) int {
 	points := 0
 	date, dateErr := time.Parse("2006-01-02", rec.PurchaseDate)
 	if dateErr == nil {
@@ -165,6 +179,11 @@ func getPointsFromDateTime(rec receipt) int {
 			points += 6
 		}
 	}
+	return points
+}
+
+func getPointsFromTime(rec receipt) int {
+	points := 0
 	time, timeErr := time.Parse("15:04", rec.PurchaseTime)
 	if timeErr == nil {
 		hour := time.Hour()
@@ -175,6 +194,5 @@ func getPointsFromDateTime(rec receipt) int {
 			points += 10
 		}
 	}
-
 	return points
 }
