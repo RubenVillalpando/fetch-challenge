@@ -10,5 +10,5 @@ func main() {
 	router.POST("receipts/process", postReceipt)
 	router.GET("receipts/:id/points", getPointsFromReceipt)
 
-	router.Run("localhost:8080")
+	router.Run("127.0.0.1:8080")
 }

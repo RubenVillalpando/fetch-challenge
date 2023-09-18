@@ -245,3 +245,65 @@ var SYMBOLS_ON_NAME_CASE_RETAILER = receipt{
 	},
 	Total: "2.01",
 }
+
+var INVALID_RETAILER_RECEIPT = receipt{
+	Retailer:     "A1&-/+} ´.,!\"$",
+	PurchaseDate: "2023-09-01",
+	PurchaseTime: "10:00",
+	Items: []item{
+		{
+			ShortDescription: "Item 1",
+			Price:            "10.99",
+		},
+	},
+	Total: "10.99",
+}
+
+var INVALID_PURCHASE_DATE_RECEIPT = receipt{
+	Retailer:     "Retailer_1",
+	PurchaseDate: "14-09-1999",
+	PurchaseTime: "10:00",
+	Items: []item{
+		{
+			ShortDescription: "Item 1",
+			Price:            "10.99",
+		},
+	},
+	Total: "10.99",
+}
+
+var INVALID_PURCHASE_TIME_RECEIPT = receipt{
+	Retailer:     "Retailer_1",
+	PurchaseDate: "2023-09-01",
+	PurchaseTime: "25:78",
+	Items: []item{
+		{
+			ShortDescription: "Item 1",
+			Price:            "10.99",
+		},
+	},
+	Total: "10.99",
+}
+
+var INVALID_ITEM_RECEIPT = receipt{
+	Retailer:     "Retailer_1",
+	PurchaseDate: "2023-09-01",
+	PurchaseTime: "10:00",
+	Items: []item{
+		{},
+	},
+	Total: "10.99",
+}
+
+var INVALID_TOTAL_RECEIPT = receipt{
+	Retailer:     "Retailer_1",
+	PurchaseDate: "2023-09-01",
+	PurchaseTime: "10:00",
+	Items: []item{
+		{
+			ShortDescription: "Item 1",
+			Price:            "10.99",
+		},
+	},
+	Total: "A1&-/+}´.,!\"$",
+}

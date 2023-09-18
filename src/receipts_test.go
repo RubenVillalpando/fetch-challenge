@@ -47,3 +47,10 @@ func TestGetPointsFromRetailerName(t *testing.T) {
 	assert.Equal(t, 14, getPointsFromRetailerName(POINTS_RECEIPT_2))
 	assert.Equal(t, 2, getPointsFromRetailerName(SYMBOLS_ON_NAME_CASE_RETAILER))
 }
+
+func TestValidateReceipt(t *testing.T) {
+	assert.Equal(t, "Invalid Retailer\n", validateReceipt(INVALID_RETAILER_RECEIPT))
+	assert.Equal(t, "Key: 'receipt.PurchaseDate' Error:Field validation for 'PurchaseDate' failed on the 'datetime' tag\n", validateReceipt(INVALID_PURCHASE_DATE_RECEIPT))
+	assert.Equal(t, "Key: 'receipt.PurchaseTime' Error:Field validation for 'PurchaseTime' failed on the 'datetime' tag\n", validateReceipt(INVALID_PURCHASE_TIME_RECEIPT))
+	assert.Equal(t, "Invalid Price on item #0\nInvalid short description on item #0\n", validateReceipt(INVALID_ITEM_RECEIPT))
+}
